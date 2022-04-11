@@ -2,8 +2,11 @@ package com.shong.phonecontentresolver
 
 import android.content.ContentResolver
 import android.database.Cursor
+import android.provider.CallLog
 import android.provider.ContactsContract
 import android.util.Log
+import java.text.SimpleDateFormat
+import java.util.*
 
 class PhoneResolver(val contentResolver: ContentResolver) {
     val TAG = this::class.java.simpleName + "_sHong"
@@ -153,5 +156,35 @@ class PhoneResolver(val contentResolver: ContentResolver) {
             }
             phones.close()
         }
+    }
+
+    fun getCallHistory(): String? {
+        val callSet = arrayOf(
+            CallLog.Calls.DATE,
+            CallLog.Calls.TYPE,
+            CallLog.Calls.NUMBER,
+            CallLog.Calls.DURATION
+        )
+        val c: Cursor = contentResolver.query(CallLog.Calls.CONTENT_URI, callSet, null, null, null) ?: return "통화기록 없음"
+        val callBuff = StringBuffer()
+        callBuff.append(" \n날짜 : 요일 : 시간 : 구분 : 전화번호 : 통화시간\n\n")
+        c.moveToFirst()
+        do {
+            val callDate: Long = c.getLong(0)
+            val datePattern = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+            val date_str: String = datePattern.format(Date(callDate))
+            callBuff.append("$date_str ->")
+            when (c.getInt(1)) {
+                CallLog.Calls.INCOMING_TYPE -> callBuff.append("<수신> ")
+                CallLog.Calls.OUTGOING_TYPE -> callBuff.append("<발신> ")
+                CallLog.Calls.MISSED_TYPE -> callBuff.append("<부재중> ")
+                CallLog.Calls.REJECTED_TYPE -> callBuff.append("<종료> ")
+            }
+            callBuff.append(c.getString(2).toString() + " : ")
+            callBuff.append(c.getString(3))
+            callBuff.append("\n")
+        } while (c.moveToNext())
+        c.close()
+        return callBuff.toString()
     }
 }
