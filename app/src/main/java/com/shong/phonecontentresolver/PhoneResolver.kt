@@ -1,9 +1,11 @@
 package com.shong.phonecontentresolver
 
+import android.annotation.SuppressLint
 import android.content.ContentResolver
 import android.database.Cursor
 import android.provider.CallLog
 import android.provider.ContactsContract
+import android.telephony.PhoneNumberUtils
 import android.util.Log
 import java.text.SimpleDateFormat
 import java.util.*
@@ -58,9 +60,11 @@ class PhoneResolver(val contentResolver: ContentResolver) {
         )
         if (groupCursor != null && groupCursor.moveToFirst()) {
             do {
-                val nameCoumnIndex = groupCursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
+                val nameCoumnIndex =
+                    groupCursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
                 val name = groupCursor.getString(nameCoumnIndex)
-                val gi = groupCursor.getColumnIndex(ContactsContract.CommonDataKinds.GroupMembership.CONTACT_ID)
+                val gi =
+                    groupCursor.getColumnIndex(ContactsContract.CommonDataKinds.GroupMembership.CONTACT_ID)
                 val contactId = groupCursor.getLong(gi)
                 val numberCursor = contentResolver.query(
                     ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
@@ -70,7 +74,8 @@ class PhoneResolver(val contentResolver: ContentResolver) {
                     null
                 )
                 if (numberCursor!!.moveToFirst()) {
-                    val numberColumnIndex = numberCursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)
+                    val numberColumnIndex =
+                        numberCursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)
                     do {
                         val phoneNumber = numberCursor.getString(numberColumnIndex)
                         Log.d(TAG, "*** Phone $name:$phoneNumber ***")
@@ -95,31 +100,42 @@ class PhoneResolver(val contentResolver: ContentResolver) {
             ContactsContract.Contacts.STARRED
         )
         val sort = ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME_PRIMARY + " ASC"
-        val phones = contentResolver.query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, projection, null, null, sort)
+        val phones = contentResolver.query(
+            ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+            projection,
+            null,
+            null,
+            sort
+        )
 
         if (phones != null && phones.count > 0) {
             while (phones.moveToNext()) {
-                val normalIndex = phones.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
+                val normalIndex =
+                    phones.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
                 val normalizedNumber = phones.getString(normalIndex)
                 val hasPhoneNumberIndex =
                     phones.getColumnIndex(ContactsContract.Contacts.HAS_PHONE_NUMBER)
                 if (phones.getString(hasPhoneNumberIndex).toInt() > 0) {
 
-                    val idIndex = phones.getColumnIndex(ContactsContract.CommonDataKinds.Phone.CONTACT_ID)
+                    val idIndex =
+                        phones.getColumnIndex(ContactsContract.CommonDataKinds.Phone.CONTACT_ID)
                     val id = phones.getInt(idIndex)
 
-                    val nameIndex = phones.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
+                    val nameIndex =
+                        phones.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
                     val name = phones.getString(nameIndex)
 
 //                    val phoneNumIndex = phones.getColumnIndex(Phone.NUMBER)
 //                    val phoneNumber = phones.getString(phoneNumIndex)
 
-                    val favIndex = phones.getColumnIndex(ContactsContract.CommonDataKinds.Phone.STARRED)
+                    val favIndex =
+                        phones.getColumnIndex(ContactsContract.CommonDataKinds.Phone.STARRED)
                     val fav = phones.getInt(favIndex)
 
                     val isFavorite = (fav == 1)
 
-                    val uriIndex = phones.getColumnIndex(ContactsContract.CommonDataKinds.Phone.PHOTO_URI)
+                    val uriIndex =
+                        phones.getColumnIndex(ContactsContract.CommonDataKinds.Phone.PHOTO_URI)
                     val uri = phones.getString(uriIndex)
                     if (uri != null) {
                         Log.d(TAG, "$id $isFavorite $name $uri")
@@ -128,7 +144,8 @@ class PhoneResolver(val contentResolver: ContentResolver) {
                     }
 
                     try {
-                        val phone_type_index = phones.getColumnIndex(ContactsContract.CommonDataKinds.Phone.TYPE)
+                        val phone_type_index =
+                            phones.getColumnIndex(ContactsContract.CommonDataKinds.Phone.TYPE)
                         val phone_type = phones.getInt(phone_type_index)
                         Log.d(TAG, "phone type : ${phone_type}")
                         when (phone_type) {
@@ -158,30 +175,35 @@ class PhoneResolver(val contentResolver: ContentResolver) {
         }
     }
 
-    fun getCallHistory(): String? {
+    @SuppressLint("SimpleDateFormat")
+    val dateFormat = SimpleDateFormat("yyyy.MM.dd a hh:mm:ss")
+    fun getCallHistory(): String {
         val callSet = arrayOf(
             CallLog.Calls.DATE,
             CallLog.Calls.TYPE,
             CallLog.Calls.NUMBER,
             CallLog.Calls.DURATION
         )
-        val c: Cursor = contentResolver.query(CallLog.Calls.CONTENT_URI, callSet, null, null, null) ?: return "통화기록 없음"
+        val c: Cursor = contentResolver.query(CallLog.Calls.CONTENT_URI, callSet, null, null, null)
+            ?: return "통화기록 없음"
         val callBuff = StringBuffer()
-        callBuff.append(" \n날짜 : 요일 : 시간 : 구분 : 전화번호 : 통화시간\n\n")
         c.moveToFirst()
         do {
             val callDate: Long = c.getLong(0)
-            val datePattern = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
-            val date_str: String = datePattern.format(Date(callDate))
-            callBuff.append("$date_str ->")
+            val date_str: String = dateFormat.format(Date(callDate))
+            callBuff.append("$date_str ")
             when (c.getInt(1)) {
                 CallLog.Calls.INCOMING_TYPE -> callBuff.append("<수신> ")
                 CallLog.Calls.OUTGOING_TYPE -> callBuff.append("<발신> ")
                 CallLog.Calls.MISSED_TYPE -> callBuff.append("<부재중> ")
                 CallLog.Calls.REJECTED_TYPE -> callBuff.append("<종료> ")
             }
-            callBuff.append(c.getString(2).toString() + " : ")
-            callBuff.append(c.getString(3))
+            val phoneNum = PhoneNumberUtils.formatNumber(
+                c.getString(2),
+                Locale.getDefault().country
+            )
+            callBuff.append("[ $phoneNum ]")
+            callBuff.append("[ 통화시간 ${c.getString(3)}초]")
             callBuff.append("\n")
         } while (c.moveToNext())
         c.close()

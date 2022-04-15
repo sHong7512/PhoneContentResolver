@@ -4,18 +4,53 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:padding="15dp"
     tools:context=".MainActivity">
 
     <TextView
-        android:text="Please show Log!"
-        android:textColor="@color/red"
-        android:textSize="40dp"
+        android:id="@+id/titleTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
+        android:text="PhoneContentResolver"
+        android:textColor="@color/black"
+        android:textSize="30dp"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toTopOf="@id/getCallHistoryButton"
+        app:layout_constraintTop_toBottomOf="@id/titleTextView">
+
+        <TextView
+            android:id="@+id/callHistoryTextView"
+            android:layout_width="match_parent"
+            android:textSize="10dp"
+            android:textColor="#0077FF"
+            android:layout_height="wrap_content" />
+
+    </ScrollView>
+
+    <Button
+        android:id="@+id/getCallHistoryButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="getCallHistory!"
+        app:layout_constraintBottom_toTopOf="@id/showLogTextView"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent" />
+
+    <TextView
+        android:id="@+id/showLogTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="Check the log for the phone number"
+        android:textColor="#FF4400"
+        android:textSize="20dp"
+        app:layout_constraintBottom_toTopOf="@id/getPhoneButton" />
 
     <Button
         android:id="@+id/getPhoneButton"
